@@ -1,7 +1,11 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FileText, Briefcase, Loader2, Sparkles, ChevronDown } from "lucide-react";
+import {
+  FileText, Briefcase, Loader2, Sparkles, ChevronDown,
+  Upload, Download, RotateCcw, LogOut, Building2
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import AnalysisResults from "@/components/AnalysisResults";
 
 export interface AnalysisData {
@@ -40,9 +44,33 @@ const Index = () => {
   const [jobDescription, setJobDescription] = useState("");
   const [targetRole, setTargetRole] = useState("");
   const [experienceLevel, setExperienceLevel] = useState("Mid");
+  const [industry, setIndustry] = useState("");
   const [loading, setLoading] = useState(false);
   const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
   const [showOptional, setShowOptional] = useState(false);
+  const [fileName, setFileName] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFileName(file.name);
+    const text = await file.text();
+    setResumeText(text);
+  };
+
+  const handleExport = () => {
+    if (!analysis) return;
+    const content = JSON.stringify(analysis, null, 2);
+    const blob = new Blob([content], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "resume-analysis.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const handleAnalyze = async () => {
     if (!resumeText.trim() || !jobDescription.trim()) return;
@@ -60,6 +88,7 @@ ${jobDescription}
 
 Target Role: ${targetRole || "Not specified"}
 Experience Level: ${experienceLevel}
+Industry: ${industry || "Not specified"}
 
 Return ONLY valid JSON with this exact structure (no markdown, no code blocks):
 {
@@ -123,15 +152,26 @@ Return ONLY valid JSON with this exact structure (no markdown, no code blocks):
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border">
-        <div className="mx-auto max-w-6xl px-6 py-5 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-primary">
-            <Sparkles className="h-5 w-5 text-primary-foreground" />
+      <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
+        <div className="mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-primary">
+              <Sparkles className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-foreground">ResumeIQ</h1>
+              <p className="text-xs text-muted-foreground">AI-Powered Resume Analysis</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-foreground">ResumeIQ</h1>
-            <p className="text-xs text-muted-foreground">AI-Powered Resume Analysis & ATS Scoring</p>
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/login")}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <LogOut className="h-4 w-4 mr-1" />
+            Login
+          </Button>
         </div>
       </header>
 
@@ -144,29 +184,51 @@ Return ONLY valid JSON with this exact structure (no markdown, no code blocks):
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              {/* Input Section */}
-              <div className="mb-6 text-center">
+              <div className="mb-8 text-center">
                 <h2 className="text-3xl font-bold text-foreground mb-2">
                   Analyze Your Resume
                 </h2>
-                <p className="text-muted-foreground">
-                  Paste your resume and target job description for a comprehensive AI analysis
+                <p className="text-muted-foreground max-w-lg mx-auto">
+                  Paste your resume and target job description for a comprehensive AI-powered analysis with ATS scoring
                 </p>
               </div>
 
               <div className="grid gap-6 md:grid-cols-2">
+                {/* Resume input */}
                 <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-sm font-medium text-foreground">
-                    <FileText className="h-4 w-4 text-primary" />
-                    Resume Text
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center gap-2 text-sm font-medium text-foreground">
+                      <FileText className="h-4 w-4 text-primary" />
+                      Resume Text
+                    </label>
+                    <div>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".txt,.md,.doc,.docx"
+                        className="hidden"
+                        onChange={handleFileUpload}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="text-xs text-muted-foreground hover:text-primary"
+                      >
+                        <Upload className="h-3 w-3 mr-1" />
+                        {fileName || "Upload file"}
+                      </Button>
+                    </div>
+                  </div>
                   <textarea
                     value={resumeText}
                     onChange={(e) => setResumeText(e.target.value)}
-                    placeholder="Paste your resume content here..."
-                    className="h-72 w-full resize-none rounded-xl border border-border bg-card p-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                    placeholder="Paste your resume content here or upload a file..."
+                    className="h-72 w-full resize-none rounded-xl border border-border bg-card p-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
                   />
                 </div>
+
+                {/* JD input */}
                 <div className="space-y-2">
                   <label className="flex items-center gap-2 text-sm font-medium text-foreground">
                     <Briefcase className="h-4 w-4 text-primary" />
@@ -176,7 +238,7 @@ Return ONLY valid JSON with this exact structure (no markdown, no code blocks):
                     value={jobDescription}
                     onChange={(e) => setJobDescription(e.target.value)}
                     placeholder="Paste the target job description here..."
-                    className="h-72 w-full resize-none rounded-xl border border-border bg-card p-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="h-72 w-full resize-none rounded-xl border border-border bg-card p-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
                   />
                 </div>
               </div>
@@ -194,7 +256,7 @@ Return ONLY valid JSON with this exact structure (no markdown, no code blocks):
                   <motion.div
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: "auto", opacity: 1 }}
-                    className="mt-3 grid gap-4 md:grid-cols-2"
+                    className="mt-3 grid gap-4 md:grid-cols-3"
                   >
                     <div className="space-y-1">
                       <label className="text-xs text-muted-foreground">Target Role</label>
@@ -202,7 +264,7 @@ Return ONLY valid JSON with this exact structure (no markdown, no code blocks):
                         value={targetRole}
                         onChange={(e) => setTargetRole(e.target.value)}
                         placeholder="e.g. Senior Frontend Engineer"
-                        className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+                        className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors"
                       />
                     </div>
                     <div className="space-y-1">
@@ -210,13 +272,25 @@ Return ONLY valid JSON with this exact structure (no markdown, no code blocks):
                       <select
                         value={experienceLevel}
                         onChange={(e) => setExperienceLevel(e.target.value)}
-                        className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+                        className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none transition-colors"
                       >
                         <option value="Fresher">Fresher</option>
                         <option value="Junior">Junior</option>
                         <option value="Mid">Mid</option>
                         <option value="Senior">Senior</option>
                       </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Building2 className="h-3 w-3" />
+                        Industry
+                      </label>
+                      <input
+                        value={industry}
+                        onChange={(e) => setIndustry(e.target.value)}
+                        placeholder="e.g. FinTech, Healthcare"
+                        className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors"
+                      />
                     </div>
                   </motion.div>
                 )}
@@ -250,13 +324,26 @@ Return ONLY valid JSON with this exact structure (no markdown, no code blocks):
             >
               <div className="mb-6 flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-foreground">Analysis Results</h2>
-                <Button
-                  variant="outline"
-                  onClick={() => setAnalysis(null)}
-                  className="border-border text-foreground hover:bg-secondary"
-                >
-                  New Analysis
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExport}
+                    className="border-border"
+                  >
+                    <Download className="h-4 w-4 mr-1" />
+                    Export
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAnalysis(null)}
+                    className="border-border"
+                  >
+                    <RotateCcw className="h-4 w-4 mr-1" />
+                    New Analysis
+                  </Button>
+                </div>
               </div>
               <AnalysisResults data={analysis} />
             </motion.div>
