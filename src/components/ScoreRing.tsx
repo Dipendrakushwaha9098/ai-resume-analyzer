@@ -7,7 +7,7 @@ interface ScoreRingProps {
 }
 
 const getColor = (score: number) => {
-  if (score >= 75) return "hsl(160, 60%, 45%)";
+  if (score >= 75) return "hsl(160, 60%, 40%)";
   if (score >= 50) return "hsl(38, 92%, 50%)";
   return "hsl(0, 72%, 51%)";
 };
@@ -28,7 +28,7 @@ const ScoreRing = ({ score, size = 120, label }: ScoreRingProps) => {
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke="hsl(222, 20%, 18%)"
+            stroke="hsl(220, 13%, 91%)"
             strokeWidth={strokeWidth}
           />
           <motion.circle
