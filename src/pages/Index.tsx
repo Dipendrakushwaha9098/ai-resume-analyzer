@@ -86,7 +86,7 @@ const Index = () => {
       target_role: targetRole || null,
       experience_level: experienceLevel,
       industry: industry || null,
-      analysis_data: analysisData as unknown as Record<string, unknown>,
+      analysis_data: JSON.parse(JSON.stringify(analysisData)),
       ats_score: analysisData.atsScore,
     }]);
     if (error) {
