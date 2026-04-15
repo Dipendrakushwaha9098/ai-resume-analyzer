@@ -2,10 +2,13 @@ import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FileText, Briefcase, Loader2, Sparkles, ChevronDown,
-  Upload, Download, RotateCcw, LogOut, Building2
+  Upload, Download, RotateCcw, LogOut, Building2, Clock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import AnalysisResults from "@/components/AnalysisResults";
 
 export interface AnalysisData {
@@ -51,6 +54,8 @@ const Index = () => {
   const [fileName, setFileName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const { toast } = useToast();
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -70,6 +75,25 @@ const Index = () => {
     a.download = "resume-analysis.json";
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const saveAnalysis = async (analysisData: AnalysisData) => {
+    if (!user) return;
+    const { error } = await supabase.from("analyses").insert({
+      user_id: user.id,
+      resume_text: resumeText,
+      job_description: jobDescription,
+      target_role: targetRole || null,
+      experience_level: experienceLevel,
+      industry: industry || null,
+      analysis_data: analysisData as unknown as Record<string, unknown>,
+      ats_score: analysisData.atsScore,
+    });
+    if (error) {
+      console.error("Failed to save analysis:", error);
+    } else {
+      toast({ title: "Analysis saved!", description: "View it anytime in your history." });
+    }
   };
 
   const handleAnalyze = async () => {
@@ -142,8 +166,10 @@ Return ONLY valid JSON with this exact structure (no markdown, no code blocks):
       const content = data.choices[0].message.content;
       const parsed = JSON.parse(content);
       setAnalysis(parsed);
+      await saveAnalysis(parsed);
     } catch (err) {
       console.error("Analysis failed:", err);
+      toast({ title: "Analysis failed", description: "Please try again.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -151,7 +177,6 @@ Return ONLY valid JSON with this exact structure (no markdown, no code blocks):
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -163,15 +188,26 @@ Return ONLY valid JSON with this exact structure (no markdown, no code blocks):
               <p className="text-xs text-muted-foreground">AI-Powered Resume Analysis</p>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/login")}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <LogOut className="h-4 w-4 mr-1" />
-            Login
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/history")}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <Clock className="h-4 w-4 mr-1" />
+              History
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={signOut}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="h-4 w-4 mr-1" />
+              Sign Out
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -194,7 +230,6 @@ Return ONLY valid JSON with this exact structure (no markdown, no code blocks):
               </div>
 
               <div className="grid gap-6 md:grid-cols-2">
-                {/* Resume input */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="flex items-center gap-2 text-sm font-medium text-foreground">
@@ -228,7 +263,6 @@ Return ONLY valid JSON with this exact structure (no markdown, no code blocks):
                   />
                 </div>
 
-                {/* JD input */}
                 <div className="space-y-2">
                   <label className="flex items-center gap-2 text-sm font-medium text-foreground">
                     <Briefcase className="h-4 w-4 text-primary" />
@@ -243,7 +277,6 @@ Return ONLY valid JSON with this exact structure (no markdown, no code blocks):
                 </div>
               </div>
 
-              {/* Optional fields */}
               <div className="mt-4">
                 <button
                   onClick={() => setShowOptional(!showOptional)}
