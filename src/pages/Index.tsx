@@ -79,7 +79,7 @@ const Index = () => {
 
   const saveAnalysis = async (analysisData: AnalysisData) => {
     if (!user) return;
-    const { error } = await supabase.from("analyses").insert({
+    const { error } = await supabase.from("analyses").insert([{
       user_id: user.id,
       resume_text: resumeText,
       job_description: jobDescription,
@@ -88,7 +88,7 @@ const Index = () => {
       industry: industry || null,
       analysis_data: analysisData as unknown as Record<string, unknown>,
       ats_score: analysisData.atsScore,
-    });
+    }]);
     if (error) {
       console.error("Failed to save analysis:", error);
     } else {
