@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { AnalysisData } from "@/pages/Index";
-import AnalysisResults from "@/components/AnalysisResults";
+import SimpleAnalysisResults from "@/components/SimpleAnalysisResults";
 
 interface AnalysisRecord {
   id: string;
@@ -64,7 +64,9 @@ const History = () => {
           </div>
         </header>
         <main className="mx-auto max-w-6xl px-6 py-8">
-          <AnalysisResults data={selectedAnalysis.analysis_data} />
+          <div className="bg-[#111827] backdrop-blur-xl p-6 rounded-2xl shadow-2xl border border-white/10">
+            <SimpleAnalysisResults analysis={selectedAnalysis.analysis_data} />
+          </div>
         </main>
       </div>
     );
